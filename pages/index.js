@@ -95,7 +95,7 @@ const Index = () => {
 
 	//Redirigir a la autorización
 	const redirecionAuth = () => {
-		const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${process.env.NEXT_PUBLIC_APP_ID}&redirect_uri=${process.env.NEXT_PUBLIC_REDIRECT_URI}`;
+		const authUrl = `https://auth.mercadolibre.com.co/authorization?response_type=code&client_id=${process.env.NEXT_PUBLIC_APP_ID}&redirect_uri=${process.env.NEXT_PUBLIC_REDIRECT_URI}`;
 		window.location.href = authUrl;
 	};
 
