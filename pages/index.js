@@ -121,7 +121,7 @@ const Index = () => {
 		} catch (error) {
 			console.error("Error parsing access_data from localStorage", error);
 		}
-	}, []);
+	}, [productData]);
 
 	return (
 		<div>
