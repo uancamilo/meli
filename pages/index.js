@@ -7,8 +7,8 @@ const Index = () => {
 
 	// Obtener el producto
 	const solicitudProducto = async (access_data) => {
-		try {
-			const accessToken = access_data?.access_token;
+		const accessToken = access_data?.access_token;
+		if (accessToken) {
 			const itemIds = "MCO1307136367"; // ID del producto
 			//Petición GET a la API de Mercado Libre
 			const response = await fetch(
@@ -27,10 +27,8 @@ const Index = () => {
 				setProductData(data);
 			} else {
 				console.log(`Error ${response.status}: ${data.message}`);
-				if (response.status === 401) solicitudAcceso();
+				if (response.status === 401) console.log("redirecionAuth()");
 			}
-		} catch (error) {
-			console.error("Error al realizar la petición:", error);
 		}
 	};
 
@@ -41,9 +39,24 @@ const Index = () => {
 				console.error("El entorno no es un navegador.");
 				return;
 			}
+
+			if (
+				!process.env.NEXT_PUBLIC_APP_ID ||
+				!process.env.NEXT_PUBLIC_SECRET_KEY ||
+				!process.env.NEXT_PUBLIC_REDIRECT_URI
+			) {
+				console.error("Faltan variables de entorno.");
+				return;
+			}
+
 			const code = new URLSearchParams(window.location.search).get("code");
 
-			if (code) {
+			if (!code) {
+				console.log("No hay código en la URL");
+				redirecionAuth();
+			} else {
+				console.log("El código es: " + code);
+
 				// Crear encabezados
 				const myHeaders = new Headers();
 				myHeaders.append("Accept", "application/json");
@@ -84,9 +97,6 @@ const Index = () => {
 						}`
 					);
 				}
-			} else {
-				console.error("No se encontró un código en la URL.");
-				redirecionAuth();
 			}
 		} catch (error) {
 			console.error("Error al realizar la petición:", error);
