@@ -35,11 +35,13 @@ const Index = () => {
 	// Solicitar acceso
 	const solicitudAcceso = async () => {
 		try {
+			// Validar entorno
 			if (typeof window === "undefined") {
 				console.error("El entorno no es un navegador.");
 				return;
 			}
 
+			// Validar variables de entorno
 			if (
 				!process.env.NEXT_PUBLIC_APP_ID ||
 				!process.env.NEXT_PUBLIC_SECRET_KEY ||
@@ -49,63 +51,77 @@ const Index = () => {
 				return;
 			}
 
-			const code = new URLSearchParams(window.location.search).get("code");
+			const code = await obtenerCodigo();
 
 			if (!code) {
-				console.log("No hay código en la URL");
-				redirecionAuth();
+				console.error("No se pudo obtener el código.");
+				return;
+			}
+
+			console.log("El código es:", code);
+
+			// Configurar encabezados y cuerpo de la solicitud
+			const myHeaders = new Headers({
+				Accept: "application/json",
+				"Content-Type": "application/x-www-form-urlencoded",
+			});
+
+			const urlencoded = new URLSearchParams({
+				grant_type: "authorization_code",
+				client_id: process.env.NEXT_PUBLIC_APP_ID,
+				client_secret: process.env.NEXT_PUBLIC_SECRET_KEY,
+				code: code,
+				redirect_uri: process.env.NEXT_PUBLIC_REDIRECT_URI,
+			});
+
+			const requestOptions = {
+				method: "POST",
+				headers: myHeaders,
+				body: urlencoded,
+				redirect: "follow",
+			};
+
+			// Realizar la solicitud al servidor
+			const response = await fetch(
+				"https://api.mercadolibre.com/oauth/token",
+				requestOptions
+			);
+			const data = await response.json();
+
+			if (response.ok) {
+				console.log("Datos de acceso:", data);
+				localStorage.setItem("access_data", JSON.stringify(data));
+				const router = useRouter();
+				router.push("/"); // Redirige a la página principal
 			} else {
-				console.log("El código es: " + code);
-
-				// Crear encabezados
-				const myHeaders = new Headers();
-				myHeaders.append("Accept", "application/json");
-				myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
-
-				// Crear cuerpo de la solicitud
-				const urlencoded = new URLSearchParams();
-				urlencoded.append("grant_type", "authorization_code");
-				urlencoded.append("client_id", process.env.NEXT_PUBLIC_APP_ID);
-				urlencoded.append("client_secret", process.env.NEXT_PUBLIC_SECRET_KEY);
-				urlencoded.append("code", code);
-				urlencoded.append("redirect_uri", process.env.NEXT_PUBLIC_REDIRECT_URI);
-
-				// Opciones de la solicitud
-				const requestOptions = {
-					method: "POST",
-					headers: myHeaders,
-					body: urlencoded,
-					redirect: "follow",
-				};
-
-				// Realizar la solicitud
-				const response = await fetch(
-					"https://api.mercadolibre.com/oauth/token",
-					requestOptions
+				console.error(
+					`Error ${response.status}: ${
+						data?.message || "Ocurrió un error inesperado."
+					}`
 				);
-				const data = await response.json();
-
-				if (response.ok) {
-					// Guardar datos en localStorage y redirigir
-					localStorage.setItem("access_data", JSON.stringify(data));
-					router.push("/"); // Redirige a la página principal
-				} else {
-					// Manejo de errores
-					console.error(
-						`Error ${response.status}: ${
-							data?.message || "Ocurrió un error inesperado."
-						}`
-					);
-				}
 			}
 		} catch (error) {
-			console.error("Error al realizar la petición:", error);
+			console.error("Error al realizar la solicitud de acceso:", error);
 		}
 	};
 
-	//Redirigir a la autorización
-	const redirecionAuth = () => {
-		const authUrl = `https://auth.mercadolibre.com.co/authorization?response_type=code&client_id=${process.env.NEXT_PUBLIC_APP_ID}&redirect_uri=${process.env.NEXT_PUBLIC_REDIRECT_URI}`;
+	// Obtener código desde la URL
+	const obtenerCodigo = async () => {
+		const code = new URLSearchParams(window.location.search).get("code");
+
+		if (code) {
+			return code;
+		} else {
+			redireccionAuth();
+			return null; // Evitar errores en flujos subsecuentes
+		}
+	};
+
+	// Redirigir a la URL de autorización
+	const redireccionAuth = () => {
+		const authUrl = `https://auth.mercadolibre.com.co/authorization?response_type=code&client_id=${
+			process.env.NEXT_PUBLIC_APP_ID
+		}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_REDIRECT_URI)}`;
 		window.location.href = authUrl;
 	};
 
